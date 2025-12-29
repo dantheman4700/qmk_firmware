@@ -90,7 +90,14 @@ enum {
 #else
     __BL_SPD_NEXT = __PROF3_NEXT,
 #endif
-    NEW_SAFE_RANGE = __BL_SPD_NEXT
+#ifdef VIA_OPENRGB_HYBRID
+    ORGB = __BL_SPD_NEXT,
+    __ORGB_NEXT,
+#else
+    ORGB = _______,
+    __ORGB_NEXT = __BL_SPD_NEXT,
+#endif
+    NEW_SAFE_RANGE = __ORGB_NEXT
 };
 
 #define KC_TASK KC_TASK_VIEW

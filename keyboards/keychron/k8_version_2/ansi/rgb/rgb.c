@@ -15,6 +15,10 @@
  */
 
 #include "quantum.h"
+#ifdef VIA_OPENRGB_HYBRID
+#include "hybrid_switch_animation.h"
+extern bool is_orgb_mode;
+#endif
 
 // clang-format off
 #ifdef RGB_MATRIX_ENABLE
@@ -151,4 +155,50 @@ led_config_t g_led_config = {
     }
 
 };
+#endif
+
+#ifdef RAW_ENABLE
+#include "openrgb.h"
+
+// Track if we're in OpenRGB direct mode
+static bool openrgb_direct_mode_active = false;
+
+void openrgb_set_direct_mode(bool active) {
+    openrgb_direct_mode_active = active;
+}
+
+bool openrgb_get_direct_mode(void) {
+    return openrgb_direct_mode_active;
+}
+
+// Hook into RGB matrix indicators to render OpenRGB direct mode colors
+bool rgb_matrix_indicators_advanced_kb(uint8_t led_min, uint8_t led_max) {
+    // Only apply OpenRGB colors when:
+    // 1. OpenRGB is active (USB connected)
+    // 2. We're in direct mode
+    // Hybrid Animation
+#ifdef VIA_OPENRGB_HYBRID
+    switch_animation_indicate();
+    // If animation is active, don't let OpenRGB overwrite it
+    if (switch_animation_isactive()) {
+        return true; 
+    }
+#endif
+
+    // Only apply OpenRGB colors when include checks for hybrid mode
+    bool should_render_openrgb = openrgb_is_active() && openrgb_direct_mode_active;
+#ifdef VIA_OPENRGB_HYBRID
+    should_render_openrgb = should_render_openrgb && is_orgb_mode;
+#endif
+
+    if (should_render_openrgb) {
+        for (uint8_t i = led_min; i < led_max; i++) {
+            rgb_matrix_set_color(i, 
+                g_openrgb_direct_mode_colors[i].r,
+                g_openrgb_direct_mode_colors[i].g,
+                g_openrgb_direct_mode_colors[i].b);
+        }
+    }
+    return rgb_matrix_indicators_advanced_user(led_min, led_max);
+}
 #endif

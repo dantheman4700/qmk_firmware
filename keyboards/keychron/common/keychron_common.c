@@ -28,6 +28,13 @@
 #    include "lkbt51.h"
 #endif
 
+#ifdef VIA_OPENRGB_HYBRID
+     bool is_orgb_mode = true; //Default value of the hybrid switch mode
+     #ifdef RGB_MATRIX_ENABLE
+     #    include "hybrid_switch_animation.h"
+     #endif
+#endif
+
 bool     is_siri_active = false;
 uint32_t siri_timer     = 0;
 
@@ -110,6 +117,7 @@ bool process_record_keychron_common(uint16_t keycode, keyrecord_t *record) {
                     unregister_code(key_comb_list[keycode - KC_TASK].keycode[i]);
                 }
             }
+
             return false; // Skip all further processing of this key
 #ifdef LED_MATRIX_ENABLE
         case BL_SPI:
@@ -123,6 +131,17 @@ bool process_record_keychron_common(uint16_t keycode, keyrecord_t *record) {
                 }
             return true;
 #endif
+        case ORGB:
+#ifdef VIA_OPENRGB_HYBRID
+            if (record->event.pressed) {
+                is_orgb_mode = !is_orgb_mode;
+#    ifdef RGB_MATRIX_ENABLE
+                switch_animation_start(is_orgb_mode);
+#    endif
+            }
+            return false; // Consume the keycode, don't process further
+#endif
+            return true; // If VIA_OPENRGB_HYBRID not defined, pass through
         default:
             return true; // Process all other keycodes normally
     }
@@ -135,6 +154,11 @@ void keychron_common_task(void) {
         is_siri_active = false;
         siri_timer     = 0;
     }
+#ifdef VIA_OPENRGB_HYBRID
+#ifdef RGB_MATRIX_ENABLE
+    switch_animation_task();
+#endif
+#endif
 }
 
 #ifdef ENCODER_ENABLE
@@ -239,6 +263,7 @@ bool kc_raw_hid_rx(uint8_t *data, uint8_t length) {
     return true;
 }
 
+// Reverted to original handling - VIA dispatch will handle OpenRGB split
 #if defined(VIA_ENABLE)
 bool via_command_kb(uint8_t *data, uint8_t length) {
     return kc_raw_hid_rx(data, length);
