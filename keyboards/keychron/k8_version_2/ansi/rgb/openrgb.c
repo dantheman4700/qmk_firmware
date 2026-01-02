@@ -23,6 +23,9 @@
 
 #ifdef LK_WIRELESS_ENABLE
 #    include "transport.h"
+#    if defined(PROTOCOL_CHIBIOS)
+#        include <usb_main.h>
+#    endif
 #endif
 
 // Direct mode color buffer for all LEDs
@@ -76,10 +79,12 @@ static const uint8_t openrgb_rgb_matrix_effects_indexes[] = {
 #endif
 };
 
-// Check if OpenRGB should be active (only when USB connected)
+// Check if OpenRGB should be active (USB cable connected, regardless of transport mode)
 bool openrgb_is_active(void) {
 #ifdef LK_WIRELESS_ENABLE
-    return get_transport() == TRANSPORT_USB;
+    // Check if USB is physically connected, not just if it's the active transport
+    // This allows OpenRGB to work when keyboard is plugged in but using Bluetooth
+    return USB_DRIVER.state == USB_ACTIVE;
 #else
     return true;
 #endif
